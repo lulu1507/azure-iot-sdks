@@ -26,6 +26,7 @@ option(skip_unittests "set skip_unittests to ON to skip unittests (default is OF
 option(compileOption_C "passes a string to the command line of the C compiler" OFF)
 option(compileOption_CXX "passes a string to the command line of the C++ compiler" OFF)
 option(build_python "builds the Python native iothub_client module" OFF)
+option(build_javawrapper "builds the native iothub_client library for java C wrapper" OFF)
 
 
 #Use solution folders. 
@@ -34,16 +35,6 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 if(IN_OPENWRT)
     ADD_DEFINITIONS("$ENV{TARGET_LDFLAGS}" "$ENV{TARGET_CPPFLAGS}" "$ENV{TARGET_CFLAGS}")
     INCLUDE_DIRECTORIES("$ENV{TOOLCHAIN_DIR}/usr/include" "$ENV{TARGET_LDFLAGS}" "$ENV{TARGET_CPPFLAGS}" "$ENV{TARGET_CFLAGS}")
-endif()
-
-if (LINUX)
-    if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
-        if("${build_python}" STREQUAL "ON")
-            # now all static libraries use PIC flag for Python shared lib
-            set(CMAKE_C_FLAGS "-fPIC ${CMAKE_C_FLAGS}")
-            set(CMAKE_CXX_FLAGS "-fPIC ${CMAKE_CXX_FLAGS}")
-        endif()
-    endif()
 endif()
 
 add_subdirectory(azure-c-shared-utility/c)
@@ -60,7 +51,6 @@ endif()
 if(NOT "${compileOption_CXX}" STREQUAL "OFF")
     set(CMAKE_CXX_FLAGS "${compileOption_CXX} ${CMAKE_CXX_FLAGS}")
 endif()
-
 
 
 #this project uses several other projects that are build not by these CMakeFiles
@@ -169,4 +159,7 @@ if("${build_python}" STREQUAL "ON")
     add_subdirectory(../python/device/iothub_client_python python)
 endif()
 
+if("${build_javawrapper}" STREQUAL "ON")	
+     add_subdirectory(../javawrapper/device/iothub_client_javawrapper javawrapper)
+endif()
 
