@@ -404,7 +404,6 @@ This function disables the notifications to the upper client layer of new messag
 
 <table>
 <tr><th>Parameter</th><th>Possible Values</th><th>Details</th></tr>
-<tr><td>TrustedCerts</td><td></td><td>Sets the certificate to be used by the transport.</td></tr>
 <tr><td>sas_token_lifetime</td><td>0 to TIME_MAX (milliseconds)</td><td>Default: 3600000 milliseconds (1 hour)	How long a SAS token created by the transport is valid, in milliseconds.</td></tr>
 <tr><td>sas_token_refresh_time</td><td>0 to TIME_MAX (milliseconds)</td><td>Default: sas_token_lifetime/2	Maximum period of time for the transport to wait before refreshing the SAS token it created previously.</td></tr>
 <tr><td>cbs_request_timeout</td><td>1 to TIME_MAX (milliseconds)</td><td>Default: 30 millisecond	Maximum time the transport waits for  AMQP cbs_put_token() to complete before marking it a failure.</td></tr>

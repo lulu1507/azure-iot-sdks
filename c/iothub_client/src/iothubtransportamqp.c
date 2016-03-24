@@ -55,7 +55,7 @@
 #define MESSAGE_SENDER_SOURCE_ADDRESS "ingress"
 #define MESSAGE_SENDER_MAX_LINK_SIZE UINT64_MAX
 
-typedef XIO_HANDLE(*TLS_IO_TRANSPORT_PROVIDER)(const char* fqdn, int port, const char* certificates);
+typedef XIO_HANDLE(*TLS_IO_TRANSPORT_PROVIDER)(const char* fqdn, int port);
 
 typedef enum CBS_STATE_TAG
 {
@@ -70,8 +70,6 @@ typedef struct AMQP_TRANSPORT_STATE_TAG
     STRING_HANDLE iotHubHostFqdn;
     // AMQP port of the IoT Hub.
     int iotHubPort;
-    // Certificates to be used by the TLS I/O.
-    char* trusted_certificates;
     // Key associated to the device to be used.
     STRING_HANDLE deviceKey;
     // Address to which the transport will connect to and send events.
@@ -349,7 +347,7 @@ static AMQP_VALUE on_message_received(const void* context, MESSAGE_HANDLE messag
     return result;
 }
 
-static XIO_HANDLE getTLSIOTransport(const char* fqdn, int port, const char* certificates)
+static XIO_HANDLE getTLSIOTransport(const char* fqdn, int port)
 {
     TLSIO_CONFIG tls_io_config = { fqdn, port };
     const IO_INTERFACE_DESCRIPTION* io_interface_description = platform_get_default_tlsio();
@@ -413,7 +411,7 @@ static int establishConnection(AMQP_TRANSPORT_INSTANCE* transport_state)
 
     // Codes_SRS_IOTHUBTRANSPORTAMQP_09_110: [IoTHubTransportAMQP_DoWork shall create the TLS IO using transport_state->io_transport_provider callback function] 
     if (transport_state->tls_io == NULL &&
-        (transport_state->tls_io = transport_state->tls_io_transport_provider(STRING_c_str(transport_state->iotHubHostFqdn), transport_state->iotHubPort, transport_state->trusted_certificates)) == NULL)
+        (transport_state->tls_io = transport_state->tls_io_transport_provider(STRING_c_str(transport_state->iotHubHostFqdn), transport_state->iotHubPort)) == NULL)
     {
         // Codes_SRS_IOTHUBTRANSPORTAMQP_09_136: [If transport_state->io_transport_provider_callback fails, IoTHubTransportAMQP_DoWork shall fail and return immediately]
         result = RESULT_FAILURE;
@@ -1089,7 +1087,6 @@ static TRANSPORT_LL_HANDLE IoTHubTransportAMQP_Create(const IOTHUBTRANSPORT_CONF
         {
             transport_state->iotHubHostFqdn = NULL;
             transport_state->iotHubPort = DEFAULT_IOTHUB_AMQP_PORT;
-            transport_state->trusted_certificates = NULL;
             transport_state->deviceKey = NULL;
             transport_state->devicesPath = NULL;
             transport_state->messageReceiveAddress = NULL;
@@ -1417,13 +1414,8 @@ static IOTHUB_CLIENT_RESULT IoTHubTransportAMQP_SetOption(TRANSPORT_LL_HANDLE ha
     {
         AMQP_TRANSPORT_INSTANCE* transport_state = (AMQP_TRANSPORT_INSTANCE*)handle;
 
-        if (strcmp("TrustedCerts", option) == 0)
-        {
-            transport_state->trusted_certificates = (char*)value;
-            result = IOTHUB_CLIENT_OK;
-        }
         // Codes_SRS_IOTHUBTRANSPORTAMQP_09_048: [IotHubTransportAMQP_SetOption shall save and apply the value if the option name is "sas_token_lifetime", returning IOTHUB_CLIENT_OK] 
-        else if (strcmp("sas_token_lifetime", option) == 0)
+        if (strcmp("sas_token_lifetime", option) == 0)
         {
             transport_state->sas_token_lifetime = *((size_t*)value);
             result = IOTHUB_CLIENT_OK;
@@ -1450,7 +1442,7 @@ static IOTHUB_CLIENT_RESULT IoTHubTransportAMQP_SetOption(TRANSPORT_LL_HANDLE ha
         else
         {			
 			if (transport_state->tls_io == NULL &&
-				(transport_state->tls_io = transport_state->tls_io_transport_provider(STRING_c_str(transport_state->iotHubHostFqdn), transport_state->iotHubPort, transport_state->trusted_certificates)) == NULL)
+				(transport_state->tls_io = transport_state->tls_io_transport_provider(STRING_c_str(transport_state->iotHubHostFqdn), transport_state->iotHubPort)) == NULL)
 			{
 				result = IOTHUB_CLIENT_ERROR;
 				LogError("Failed to obtain a TLS I/O transport layer.\r\n");
