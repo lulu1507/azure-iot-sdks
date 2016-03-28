@@ -69,22 +69,31 @@ var runTests = function (DeviceTransport, hubConnStr, deviceConStr, deviceName, 
                 debug('Abandon the message with guid ' + msg.data);
                 abandonnedOnce = true;
                 deviceClient.abandon(msg, function (err, result) {
-                  assert.isNull(err);
-                  assert.equal(result.constructor.name, 'MessageAbandoned');
+                  if(err) {
+                    done(err);
+                  } else {
+                    assert.equal(result.constructor.name, 'MessageAbandoned');
+                  }
                 });
               } else {
                 debug('Complete the message with guid ' + msg.data);
                 deviceClient.complete(msg, function (err, res) {
-                  assert.isNull(err);
-                  assert.equal(res.constructor.name, 'MessageCompleted');
-                  done();
+                  if(err) {
+                    done(err);
+                  } else {
+                    assert.equal(res.constructor.name, 'MessageCompleted');
+                    done();
+                  }
                 });
               }
             } else {
               debug('not the message I\'m looking for, completing it to clean the queue (' + msg.data + ')');
               deviceClient.complete(msg, function (err, result) {
-                assert.isNull(err);
-                assert.equal(result.constructor.name, 'MessageCompleted');
+                if(err) {
+                  done(err);
+                } else {
+                  assert.equal(result.constructor.name, 'MessageCompleted');
+                }
               });
             }
           });
@@ -96,8 +105,11 @@ var runTests = function (DeviceTransport, hubConnStr, deviceConStr, deviceName, 
           done(serviceErr);
         } else {
           serviceClient.send(deviceName, guid, function (sendErr) {
-            assert.isNull(sendErr);
-            debug('Sent one message with guid: ' + guid);
+            if(sendErr) {
+              done(sendErr);
+            } else {
+              debug('Sent one message with guid: ' + guid);
+            }
           });
         }
       });
@@ -119,15 +131,21 @@ var runTests = function (DeviceTransport, hubConnStr, deviceConStr, deviceName, 
                 debug('Abandon the message with guid ' + msg.data);
                 abandonnedOnce = true;
                 deviceClient.abandon(msg, function (err, result) {
-                  assert.isNull(err);
-                  assert.equal(result.constructor.name, 'MessageAbandoned');
+                  if(err) {
+                    done(err);
+                  } else {
+                    assert.equal(result.constructor.name, 'MessageAbandoned');
+                  }
                 });
               } else {
                 debug('Rejects the message with guid ' + msg.data);
                 deviceClient.reject(msg, function (err, res) {
-                  assert.isNull(err);
-                  assert.equal(res.constructor.name, 'MessageRejected');
-                  done();
+                  if(err) {
+                    done(err);
+                  } else {
+                    assert.equal(res.constructor.name, 'MessageRejected');
+                    done();
+                  }
                 });
               }
             } else {
@@ -146,8 +164,11 @@ var runTests = function (DeviceTransport, hubConnStr, deviceConStr, deviceName, 
           done(serviceErr);
         } else {
           serviceClient.send(deviceName, guid, function (sendErr) {
-            assert.isNull(sendErr);
-            debug('Sent one message with guid: ' + guid);
+            if(sendErr) {
+              done(sendErr);
+            } else {
+              debug('Sent one message with guid: ' + guid);
+            }
           });
         }
       });
@@ -165,8 +186,11 @@ var runTests = function (DeviceTransport, hubConnStr, deviceConStr, deviceName, 
             deviceMessageCounter++;
             debug('Received ' + deviceMessageCounter + ' message(s)');
             deviceClient.complete(msg, function (err, result) {
-              assert.isNull(err);
-              assert.equal(result.constructor.name, 'MessageCompleted');
+              if(err) {
+                done(err);
+              } else {
+                assert.equal(result.constructor.name, 'MessageCompleted');
+              }
             });
 
             if (deviceMessageCounter === 5) {
@@ -182,15 +206,18 @@ var runTests = function (DeviceTransport, hubConnStr, deviceConStr, deviceName, 
         } else {
           var msgSentCounter = 0;
           var sendCallback = function (sendErr) {
-            assert.isNull(sendErr);
-            msgSentCounter++;
-            debug('Sent ' + msgSentCounter + ' message(s)');
+            if(sendErr) {
+              done(sendErr);
+            } else {
+              msgSentCounter++;
+              debug('Sent ' + msgSentCounter + ' message(s)');
+            }
           };
 
           for (var i = 0; i < 5; i++) {
             debug('Sending message #' + i);
             var msg = new Message({ 'counter': i });
-            msg.expiryTimeUtc = Date.now() + 10000; // Expire 10s from now, to reduce the chance of us hitting the 50-message limit on the IoT Hub
+            msg.expiryTimeUtc = Date.now() + 900000; // Expire 15 minutes from now, to reduce the chance of us hitting the 50-message limit on the IoT Hub
             serviceClient.send(deviceName, msg, sendCallback);
           }
         }
@@ -198,7 +225,7 @@ var runTests = function (DeviceTransport, hubConnStr, deviceConStr, deviceName, 
     });
 
     it('Device sends a message of maximum size and it is received by the service', function (done) {
-      this.timeout(120000);
+      this.timeout(180000);
       var startTime = Date.now();
       var bufferSize = 254 * 1024;
       var buffer = new Buffer(bufferSize);
@@ -209,8 +236,11 @@ var runTests = function (DeviceTransport, hubConnStr, deviceConStr, deviceName, 
         } else {
           var message = new Message(buffer);
           deviceClient.sendEvent(message, function (sendErr) {
-            assert.isNull(sendErr);
-            debug('Message sent at ' + Date.now());
+            if(sendErr) {
+              done(sendErr);
+            } else {
+              debug('Message sent at ' + Date.now());
+            }
           });
         }
       });
@@ -226,7 +256,6 @@ var runTests = function (DeviceTransport, hubConnStr, deviceConStr, deviceName, 
               receiver.on('eventReceived', function (eventData) {
                 if ((eventData.SystemProperties['iothub-connection-device-id'] === deviceName) &&
                   (eventData.SystemProperties['x-opt-enqueued-time'] >= startTime - 5000)) {
-                  debug('Event received: ' + eventData.Bytes);
                   if (eventData.Bytes.length === bufferSize) {
                     receiver.removeAllListeners();
                     ehClient.close();
